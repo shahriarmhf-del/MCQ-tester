@@ -5,6 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quizora — MCQ Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat version — works in plain HTML, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+/* ══ PASTE YOUR FIREBASE CONFIG HERE ════════════════════════════════
+   Steps:
+   1. Go to https://console.firebase.google.com
+   2. Create a project → Add a Web App → copy the firebaseConfig below
+   3. In Firestore → Rules, set: allow read, write: if true;  (for testing)
+   ═══════════════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAiCqVQdO4gcXYggIwBwsiNNovDy_4jfsU",
+  authDomain: "quizora-7f748.firebaseapp.com",
+  projectId: "quizora-7f748",
+  storageBucket: "quizora-7f748.firebasestorage.app",
+  messagingSenderId: "798267978221",
+  appId: "1:798267978221:web:905d60f0ddb3d9e6d1b7e4",
+  measurementId: "G-57FYP009FG"
+};
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) {
+  console.warn('Firebase not configured — cloud features disabled. Local features work fine.');
+}
+</script>
 <style>
   :root {
     --ink: #0a0a0f;
@@ -248,6 +275,42 @@
   .shuffle-row input { accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
   .shuffle-row span { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; color:var(--ink); }
   .shuffle-row small { font-size:11px; color:var(--muted); }
+
+  /* ── Firebase / Cloud styles ── */
+  .cloud-share-panel { background:rgba(99,102,241,0.06); border:1.5px solid rgba(99,102,241,0.25); border-radius:14px; padding:16px; margin:12px 0; }
+  .cloud-share-title { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#6366f1; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .cloud-link-box { width:100%; padding:9px 12px; background:white; border:1.5px solid rgba(10,10,15,0.15); border-radius:8px; font-size:12px; font-family:'Courier New',monospace; color:var(--ink); word-break:break-all; min-height:38px; line-height:1.5; margin-bottom:8px; }
+  .cloud-btn-row { display:flex; gap:8px; }
+  .cloud-save-btn { flex:1; padding:9px 14px; font-family:'Syne',sans-serif; font-size:12px; font-weight:700; border:1.5px solid #6366f1; border-radius:8px; background:#6366f1; color:white; cursor:pointer; box-shadow:2px 2px 0 rgba(99,102,241,0.3); transition:transform 0.1s,box-shadow 0.1s; }
+  .cloud-save-btn:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 rgba(99,102,241,0.3); }
+  .cloud-save-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  .cloud-copy-btn { flex:1; padding:9px 14px; font-family:'Syne',sans-serif; font-size:12px; font-weight:700; border:1.5px solid rgba(10,10,15,0.2); border-radius:8px; background:white; color:var(--ink); cursor:pointer; box-shadow:2px 2px 0 rgba(10,10,15,0.15); transition:transform 0.1s,box-shadow 0.1s; }
+  .cloud-copy-btn:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 rgba(10,10,15,0.15); }
+  .cloud-copy-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .firebase-badge { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-family:'Syne',sans-serif; font-weight:700; padding:3px 9px; border-radius:100px; margin-bottom:10px; }
+  .firebase-badge.ok  { background:rgba(45,122,79,0.12); color:var(--success); }
+  .firebase-badge.off { background:rgba(201,123,0,0.12); color:var(--warning); }
+
+  /* Leaderboard page */
+  .lb-row { display:flex; align-items:center; gap:12px; padding:11px 14px; background:white; border:1.5px solid var(--border); border-radius:10px; margin-bottom:8px; }
+  .lb-rank { font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem; min-width:28px; text-align:center; color:var(--muted); }
+  .lb-rank.gold { color:#c9a84c; } .lb-rank.silver { color:#8a9aa8; } .lb-rank.bronze { color:#b87333; }
+  .lb-info { flex:1; min-width:0; }
+  .lb-name { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lb-meta { font-size:11px; color:var(--muted); margin-top:1px; }
+  .lb-score { font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem; color:var(--accent); white-space:nowrap; }
+  .lb-empty { font-size:13px; color:var(--muted); text-align:center; padding:24px 0; }
+  .lb-spinner { text-align:center; padding:20px 0; font-size:22px; animation:spin 1s linear infinite; display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Name entry modal */
+  .name-modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,10,15,0.65); z-index:998; align-items:center; justify-content:center; }
+  .name-modal-overlay.show { display:flex; animation:fadeIn 0.2s ease both; }
+  .name-modal { background:var(--cream); border:2px solid var(--ink); border-radius:20px; padding:36px 40px; max-width:340px; width:90%; box-shadow:6px 6px 0 var(--ink); text-align:center; animation:popIn 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+  .name-modal h3 { font-family:'Syne',sans-serif; font-weight:800; font-size:1.3rem; margin-bottom:6px; }
+  .name-modal p { font-size:13px; color:var(--muted); margin-bottom:18px; }
+  .name-modal input { margin-bottom:14px; text-align:center; font-size:15px; }
+  .name-modal-btns { display:flex; gap:10px; }
 </style>
 </head>
 <body>
@@ -261,6 +324,23 @@
     <button class="btn success-btn" style="justify-content:center;" onclick="closeTimeoutAndSubmit()">
       <span class="btn-icon" style="background:rgba(255,255,255,0.2)">📊</span> See My Results
     </button>
+  </div>
+</div>
+
+<!-- Name entry modal (for leaderboard) -->
+<div class="name-modal-overlay" id="nameModal">
+  <div class="name-modal">
+    <h3>🏆 Submit to Leaderboard</h3>
+    <p>Enter your name to save your score online and compete with others.</p>
+    <input type="text" id="playerNameInput" placeholder="Your name" maxlength="30">
+    <div class="name-modal-btns">
+      <button class="btn accent-btn" style="flex:1;justify-content:center;padding:12px;" onclick="confirmLeaderboardSubmit()">
+        Submit Score
+      </button>
+      <button class="btn ghost" style="flex:1;justify-content:center;padding:12px;" onclick="closeNameModal()">
+        Skip
+      </button>
+    </div>
   </div>
 </div>
 
@@ -363,22 +443,38 @@
           <span class="btn-icon" style="background:rgba(255,255,255,0.2)">🚀</span> Launch Assessment
         </button>
 
-        <!-- ── NEW: Share & Save section ── -->
+        <!-- ── Share & Save section ── -->
         <div class="divider" style="margin:24px 0 12px;">Share & Save</div>
 
-        <!-- Share panel -->
+        <!-- Cloud share panel -->
+        <div class="cloud-share-panel">
+          <div class="cloud-share-title">☁️ Cloud Share (Short Link)</div>
+          <div id="firebaseBadge" class="firebase-badge off">● Firebase not configured</div>
+          <div class="cloud-link-box" id="cloudLinkBox">Configure Firebase to get a short share link.</div>
+          <div class="cloud-btn-row">
+            <button class="cloud-save-btn" id="cloudSaveBtn" onclick="saveQuizCloud()" disabled>☁️ Save &amp; Get Link</button>
+            <button class="cloud-copy-btn" id="cloudCopyBtn" onclick="copyCloudLink()" disabled>📋 Copy Link</button>
+          </div>
+        </div>
+
+        <!-- URL share panel (fallback) -->
         <div class="share-panel">
-          <div class="share-panel-title">🔗 Shareable Link</div>
+          <div class="share-panel-title">🔗 URL Link (no server needed)</div>
           <div class="share-url-row">
             <div class="share-url-box" id="shareUrlBox">Add questions to generate a link.</div>
             <button class="copy-btn" id="copyShareBtn" onclick="copyShareLink()">📋 Copy</button>
           </div>
-          <div class="share-hint">Anyone with this link can open and take your quiz. Questions are encoded in the URL.</div>
+          <div class="share-hint">Encoded directly in the URL. Works without Firebase but gets long with many questions.</div>
         </div>
 
-        <!-- Save to storage -->
+        <!-- Local save -->
         <button class="btn gold-btn" style="margin:10px 0 6px;" onclick="saveQuizToStorage()">
           <span class="btn-icon" style="background:rgba(255,255,255,0.2)">💾</span> Save Quiz Locally
+        </button>
+
+        <!-- Leaderboard button -->
+        <button class="btn" style="margin:0 0 6px;" onclick="showPage('leaderboardPage')">
+          <span class="btn-icon">🏆</span> View Leaderboard
         </button>
 
         <!-- Saved quizzes -->
@@ -447,6 +543,21 @@
         </button>
       </div>
 
+      <!-- LEADERBOARD PAGE -->
+      <div class="page" id="leaderboardPage">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <h2>🏆 Leaderboard</h2>
+          <button class="btn ghost" style="width:auto;padding:8px 14px;" onclick="showPage('homePage')">← Back</button>
+        </div>
+        <p class="subtitle" style="margin-bottom:16px;">Top scores from all players.</p>
+        <div id="lbFirebaseBadge" class="firebase-badge off" style="margin-bottom:12px;">● Firebase not configured</div>
+        <div id="lbFilterRow" class="lb-filter" style="display:none;">
+          <button class="lb-filter-btn active" onclick="loadLeaderboard('all',this)">All Quizzes</button>
+        </div>
+        <div id="leaderboardList"><div class="lb-empty">Configure Firebase to see the leaderboard.</div></div>
+        <button class="btn ghost" style="margin-top:16px;" onclick="loadLeaderboard('all')">🔄 Refresh</button>
+      </div>
+
       <!-- RESULT PAGE -->
       <div class="page" id="resultPage">
         <div class="tag">Results</div>
@@ -455,7 +566,10 @@
           <div class="progress-bar-fill" id="resultProgress" style="width:0%"></div>
         </div>
         <p id="scoreMsg" style="color:var(--muted);font-size:14px;margin-bottom:8px;"></p>
-        <p id="timeTakenMsg" style="color:var(--muted);font-size:13px;margin-bottom:20px;"></p>
+        <p id="timeTakenMsg" style="color:var(--muted);font-size:13px;margin-bottom:12px;"></p>
+        <button class="btn" id="submitLeaderboardBtn" onclick="openNameModal()" style="margin-bottom:16px;display:none;">
+          <span class="btn-icon">🏆</span> Submit to Leaderboard
+        </button>
         <div id="reviewArea"></div>
         <button class="btn primary" onclick="location.reload()" style="margin-top:16px;">
           <span class="btn-icon">🔄</span> New Session
@@ -526,40 +640,42 @@ const DRAFT_KEY   = 'quizora_draft';
 /* ══════════════════════════════════════════════
    INIT — check URL for shared quiz & draft resume
 ══════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', () => {
-  // 1. Load from URL if ?q= present
+window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(location.search);
-  if (params.has('q')) {
+
+  // 1a. Load from Firebase short link: ?id=abc123
+  if (params.has('id')) {
+    try { history.replaceState({}, '', location.pathname); } catch(e) {}
+    await loadQuizFromCloudId(params.get('id'));
+  }
+  // 1b. Load from URL-encoded ?q= (fallback)
+  else if (params.has('q')) {
     try {
       const decoded = JSON.parse(decodeURIComponent(escape(atob(params.get('q')))));
-      // Support both compressed {n, d} and legacy {name, questions} formats
       if (decoded.d && Array.isArray(decoded.d)) {
         questions = decoded.d.map(x => ({ q: x.q, options: x.o, ans: x.a }));
         if (decoded.n) document.getElementById('quizName').value = decoded.n;
-        updateStats();
-        updateShareUrl();
+        updateStats(); updateShareUrl();
         showToast('📥 Shared quiz loaded! (' + questions.length + ' questions)');
       } else if (decoded.questions && Array.isArray(decoded.questions)) {
         questions = decoded.questions;
         if (decoded.name) document.getElementById('quizName').value = decoded.name;
-        updateStats();
-        updateShareUrl();
+        updateStats(); updateShareUrl();
         showToast('📥 Shared quiz loaded! (' + questions.length + ' questions)');
       }
-    } catch(e) { /* bad param, ignore */ }
-    // Clean URL (safe — won't throw on file://)
+    } catch(e) {}
     try { history.replaceState({}, '', location.pathname); } catch(e) {}
   }
 
-  // 2. Load saved quizzes list
+  // 2. Local saved quizzes
   renderSavedList();
-
-  // 3. Check for resume draft
+  // 3. Resume draft
   checkResumeDraft();
-
-  // 4. Update copy button label based on protocol
+  // 4. Copy button label for local file
   const copyBtn = document.getElementById('copyShareBtn');
   if (copyBtn && location.protocol === 'file:') copyBtn.textContent = '⬇️ Download Share File';
+  // 5. Firebase UI init
+  initFirebaseUI();
 
   updateStats();
 });
@@ -908,6 +1024,12 @@ function submitTest() {
     document.getElementById('timeTakenMsg').textContent = '⏱ Time taken: ' + em + 'm ' + es + 's';
   } else { document.getElementById('timeTakenMsg').textContent = ''; }
 
+  // Store score for leaderboard submission
+  const quizName = document.getElementById('quizName').value.trim() || 'Untitled Quiz';
+  pendingScore = { score, total: questions.length, quizName };
+  const lbBtn = document.getElementById('submitLeaderboardBtn');
+  if (lbBtn) lbBtn.style.display = db ? 'flex' : 'none';
+
   showPage('resultPage');
   setTimeout(() => { document.getElementById('resultProgress').style.width = pct + '%'; }, 200);
 }
@@ -1221,6 +1343,172 @@ function showToast(msg, isWarn) {
    UTIL
 ══════════════════════════════════════════════ */
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ══════════════════════════════════════════════
+   FIREBASE — INIT UI
+══════════════════════════════════════════════ */
+let cloudQuizId = null;   // ID of last cloud-saved quiz
+let pendingScore = null;  // score waiting for name entry
+
+function initFirebaseUI() {
+  const ok = db !== null;
+  // Home badge
+  const badge = document.getElementById('firebaseBadge');
+  if (badge) {
+    badge.className = 'firebase-badge ' + (ok ? 'ok' : 'off');
+    badge.textContent = ok ? '● Firebase connected' : '● Firebase not configured — add your config in <head>';
+  }
+  // Leaderboard badge
+  const lbBadge = document.getElementById('lbFirebaseBadge');
+  if (lbBadge) {
+    lbBadge.className = 'firebase-badge ' + (ok ? 'ok' : 'off');
+    lbBadge.textContent = ok ? '● Live data' : '● Firebase not configured';
+  }
+  // Cloud buttons
+  const saveBtn = document.getElementById('cloudSaveBtn');
+  const copyBtn = document.getElementById('cloudCopyBtn');
+  if (saveBtn) saveBtn.disabled = !ok;
+  if (copyBtn) copyBtn.disabled = true; // enabled after save
+  if (ok) loadLeaderboard('all');
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE — SAVE QUIZ (short link)
+══════════════════════════════════════════════ */
+async function saveQuizCloud() {
+  if (!db) { showToast('⚠️ Firebase not configured!', true); return; }
+  if (questions.length === 0) { showToast('⚠️ No questions to save!', true); return; }
+  const saveBtn = document.getElementById('cloudSaveBtn');
+  saveBtn.textContent = '⏳ Saving…';
+  saveBtn.disabled = true;
+  try {
+    const name = document.getElementById('quizName').value.trim() || 'Untitled Quiz';
+    const docRef = await db.collection('quizzes').add({
+      name,
+      questions,
+      createdAt: Date.now()
+    });
+    cloudQuizId = docRef.id;
+    const link = location.protocol !== 'file:'
+      ? location.href.split('?')[0] + '?id=' + cloudQuizId
+      : 'https://YOUR-DOMAIN.com/?id=' + cloudQuizId;
+    document.getElementById('cloudLinkBox').textContent = link;
+    document.getElementById('cloudCopyBtn').disabled = false;
+    saveBtn.textContent = '✅ Saved!';
+    showToast('☁️ Quiz saved! Short link ready.');
+  } catch(e) {
+    saveBtn.textContent = '☁️ Save & Get Link';
+    saveBtn.disabled = false;
+    showToast('❌ Save failed: ' + e.message, true);
+  }
+}
+
+function copyCloudLink() {
+  const link = document.getElementById('cloudLinkBox').textContent;
+  if (!link || link.startsWith('Configure')) return;
+  navigator.clipboard.writeText(link)
+    .then(() => showToast('🔗 Short link copied!'))
+    .catch(() => { prompt('Copy this link:', link); });
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE — LOAD QUIZ FROM ?id=
+══════════════════════════════════════════════ */
+async function loadQuizFromCloudId(id) {
+  if (!db) return false;
+  try {
+    const doc = await db.collection('quizzes').doc(id).get();
+    if (doc.exists) {
+      const data = doc.data();
+      questions = data.questions;
+      cloudQuizId = id;
+      if (data.name) document.getElementById('quizName').value = data.name;
+      updateStats();
+      updateShareUrl();
+      showToast('📥 Quiz loaded from cloud! (' + questions.length + ' questions)');
+      return true;
+    } else {
+      showToast('❌ Quiz not found in database.', true);
+      return false;
+    }
+  } catch(e) {
+    showToast('❌ Load failed: ' + e.message, true);
+    return false;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   FIREBASE — LEADERBOARD
+══════════════════════════════════════════════ */
+async function saveScore(playerName, score, total, quizName) {
+  if (!db) return;
+  await db.collection('scores').add({
+    name: playerName.trim() || 'Anonymous',
+    score,
+    total,
+    pct: Math.round(score / total * 100),
+    quizName: quizName || 'Untitled',
+    quizId: cloudQuizId || null,
+    time: Date.now()
+  });
+}
+
+async function loadLeaderboard(filter) {
+  if (!db) return;
+  const list = document.getElementById('leaderboardList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:20px;font-size:22px;">⏳</div>';
+  try {
+    let query = db.collection('scores').orderBy('pct', 'desc').orderBy('time', 'asc').limit(20);
+    const snapshot = await query.get();
+    if (snapshot.empty) { list.innerHTML = '<div class="lb-empty">No scores yet. Be the first!</div>'; return; }
+    list.innerHTML = '';
+    const rankIcons = ['🥇','🥈','🥉'];
+    const rankClasses = ['gold','silver','bronze'];
+    snapshot.docs.forEach((doc, i) => {
+      const d = doc.data();
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+      const date = new Date(d.time).toLocaleDateString();
+      row.innerHTML = `
+        <div class="lb-rank ${rankClasses[i] || ''}">${rankIcons[i] || (i+1)}</div>
+        <div class="lb-info">
+          <div class="lb-name">${escHtml(d.name)}</div>
+          <div class="lb-meta">${escHtml(d.quizName || 'Quiz')} · ${date}</div>
+        </div>
+        <div class="lb-score">${d.score}/${d.total} <span style="font-size:11px;color:var(--muted)">(${d.pct}%)</span></div>`;
+      list.appendChild(row);
+    });
+    // Show filter row
+    const fr = document.getElementById('lbFilterRow');
+    if (fr) fr.style.display = 'flex';
+  } catch(e) {
+    list.innerHTML = '<div class="lb-empty">Error loading: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   NAME MODAL
+══════════════════════════════════════════════ */
+function openNameModal() {
+  if (!db) { showToast('⚠️ Firebase not configured!', true); return; }
+  document.getElementById('nameModal').classList.add('show');
+  document.getElementById('playerNameInput').focus();
+}
+function closeNameModal() {
+  document.getElementById('nameModal').classList.remove('show');
+}
+async function confirmLeaderboardSubmit() {
+  const name = document.getElementById('playerNameInput').value.trim() || 'Anonymous';
+  closeNameModal();
+  if (!pendingScore) return;
+  try {
+    await saveScore(name, pendingScore.score, pendingScore.total, pendingScore.quizName);
+    showToast('🏆 Score submitted! Check the leaderboard.');
+  } catch(e) {
+    showToast('❌ Submit failed: ' + e.message, true);
+  }
+}
 
 updateStats();
 </script>
