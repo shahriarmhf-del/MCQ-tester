@@ -1459,8 +1459,7 @@ async function loadLeaderboard(filter) {
   if (!list) return;
   list.innerHTML = '<div style="text-align:center;padding:20px;font-size:22px;">⏳</div>';
   try {
-    let query = db.collection('scores').orderBy('pct', 'desc').orderBy('time', 'asc').limit(20);
-    const snapshot = await query.get();
+    const snapshot = await db.collection('scores').orderBy('pct', 'desc').limit(20).get();
     if (snapshot.empty) { list.innerHTML = '<div class="lb-empty">No scores yet. Be the first!</div>'; return; }
     list.innerHTML = '';
     const rankIcons = ['🥇','🥈','🥉'];
