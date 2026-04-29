@@ -532,7 +532,14 @@ window.addEventListener('DOMContentLoaded', () => {
   if (params.has('q')) {
     try {
       const decoded = JSON.parse(decodeURIComponent(escape(atob(params.get('q')))));
-      if (decoded.questions && Array.isArray(decoded.questions)) {
+      // Support both compressed {n, d} and legacy {name, questions} formats
+      if (decoded.d && Array.isArray(decoded.d)) {
+        questions = decoded.d.map(x => ({ q: x.q, options: x.o, ans: x.a }));
+        if (decoded.n) document.getElementById('quizName').value = decoded.n;
+        updateStats();
+        updateShareUrl();
+        showToast('📥 Shared quiz loaded! (' + questions.length + ' questions)');
+      } else if (decoded.questions && Array.isArray(decoded.questions)) {
         questions = decoded.questions;
         if (decoded.name) document.getElementById('quizName').value = decoded.name;
         updateStats();
@@ -763,7 +770,9 @@ function startTest() {
   document.getElementById('testTitle').textContent = testMode === 'instant' ? '⚡ Instant Solve' : 'Assessment';
   const lsb = document.getElementById('liveScoreBar');
   lsb.style.display = testMode === 'instant' ? 'flex' : 'none';
-  document.getElementById('submitBtn').style.display = testMode === 'instant' ? 'none' : 'flex';
+  const sBtn = document.getElementById('submitBtn');
+  sBtn.style.display = 'flex';
+  sBtn.querySelector('span:last-child') && (sBtn.childNodes[sBtn.childNodes.length-1].textContent = testMode === 'instant' ? ' Finish & See Results' : ' Submit & See Results');
   if (testMode === 'instant') {
     document.getElementById('liveTotal').textContent = questions.length;
     document.getElementById('liveCorrect').textContent = '0';
@@ -909,7 +918,7 @@ function submitTest() {
 function buildShareUrl() {
   if (questions.length === 0) return null;
   const name = document.getElementById('quizName').value.trim() || 'Untitled Quiz';
-  const payload = { name, questions };
+  const payload = { n: name, d: questions.map(q => ({ q: q.q.trim(), o: q.options.map(s=>s.trim()), a: q.ans })) };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
 
   // If running on a real http/https server, embed ?q= in the URL
@@ -928,7 +937,11 @@ function updateShareUrl() {
   const url = buildShareUrl();
   if (!url) { box.textContent = 'Add questions to generate a link.'; return; }
   if (url.startsWith('__local__:')) {
-    box.textContent = '⚠️ Running as a local file. Click "📋 Copy" to copy the quiz data, or use "💾 Save Quiz Locally" instead. For true URL sharing, host this HTML on a web server.';
+    box.textContent = '⚠️ Running as a local file. Click the button to download a shareable file. For URL sharing, host this HTML on a web server.';
+    return;
+  }
+  if (url.length > 2000) {
+    box.textContent = '⚠️ Link is too long (' + url.length + ' chars) for reliable sharing. Use "💾 Save Quiz Locally" instead, or reduce question count.';
     return;
   }
   box.textContent = url.length > 200 ? url.substring(0, 197) + '…' : url;
@@ -937,6 +950,11 @@ function updateShareUrl() {
 function copyShareLink() {
   const url = buildShareUrl();
   if (!url) { showToast('⚠️ No questions to share!', true); return; }
+
+  if (!url.startsWith('__local__:') && url.length > 2000) {
+    showToast('⚠️ Too many questions for a URL link! Use Save Quiz Locally.', true);
+    return;
+  }
 
   if (url.startsWith('__local__:')) {
     // Local file mode: copy the raw encoded payload so the user can
@@ -1113,7 +1131,7 @@ function resumeTest() {
 
     const lsb = document.getElementById('liveScoreBar');
     lsb.style.display = testMode === 'instant' ? 'flex' : 'none';
-    document.getElementById('submitBtn').style.display = testMode === 'instant' ? 'none' : 'flex';
+    document.getElementById('submitBtn').style.display = 'flex';
 
     if (testMode === 'instant') {
       document.getElementById('liveTotal').textContent = questions.length;
