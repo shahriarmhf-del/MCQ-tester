@@ -1039,7 +1039,7 @@ function processInputToPreview() {
     let qIdx = block.lastIndexOf('?');
     let questionText = block.substring(0, qIdx+1).trim();
     let optsText = block.substring(qIdx+1).trim();
-    let opts = optsText.split(',').map(s => s.trim()).filter(Boolean);
+    let opts = optsText.split('|').map(s => s.trim()).filter(Boolean);
     if (questionText && opts.length > 0) {
       while (opts.length < 4) opts.push('');
       parsed.push({ q: questionText, image: null, options: opts.slice(0,6), optionImages: opts.slice(0,6).map(()=>null), ans: ansIndex });
